@@ -1,0 +1,202 @@
+/*
+ * {{ file_name }}
+ * This file is part of {{ project_name }}
+ *
+ * Copyright (C) {{ year }} - {{ author }}
+ *
+{{ license }}
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include "{{ header_name }}"
+{% for header in lib_source_includes %}
+#include <{{ header }}>
+{%- endfor %}
+{% for header in source_includes %}
+#include "{{ header }}"
+{%- endfor %}
+
+#define {{ type_name | upper }}_GET_PRIVATE(obj)\
+ (G_TYPE_INSTANCE_GET_PRIVATE ((obj),\
+ {{ type_name | upper | replace('_', '_TYPE_', 1) }},\
+ {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Private))
+{% if properties | length > 0 %}
+/* Define Properties */
+enum
+{
+  PROP_0,
+{% for property in properties %}
+  PROP_{{ property.name | replace('-', '_') | replace(' ', '_') | replace('.', '_') | upper }},
+{% endfor %}
+  N_PROPERTIES
+};
+{%- endif %}
+#define {{ type_name | lower }}_parent_class parent_class
+{% if with_private -%}
+struct _{% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Private
+{
+  {%- for property in properties %}
+  g{{ property.type }}  {{ property.name | replace('-', '_') | replace(' ', '_') | replace('.', '_') | lower }};
+  {%- endfor %}
+
+{%- if properties | length == 0 %}
+  gint placeholder;
+{%- endif %}
+};
+
+G_DEFINE_TYPE_WITH_PRIVATE ({% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}, {{ type_name | lower }},
+                            {{ parent_type | upper | replace('_', '_TYPE_', 1) }});
+{% else %}
+G_DEFINE_TYPE ({% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}, {{ type_name | lower }},
+               {{ parent_type | upper | replace('_', '_TYPE_', 1) }});
+{% endif %}
+
+static void
+{{ type_name | lower}}_init ({% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}* self)
+{
+{% if public_private %}
+  self->priv = {{ type_name | lower}}_get_instance_private (self);
+{% elif properties | length > 0 %}
+  {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Private * priv = {{ type_name | lower}}_get_instance_private (self);
+{% endif %}
+{% if properties | length > 0 %}
+  /* predefined values */
+{%- endif %}
+{%- for property in properties %}
+{% if public_private %}
+  self->priv->{{ property.name | replace('-', '_') | replace(' ', '_') | replace('.', '_') | lower }} = {{ property.default }};
+{% else %}
+  priv->{{ property.name | replace('-', '_') | replace(' ', '_') | replace('.', '_') | lower }} = {{ property.default }};
+{% endif %}
+{% endfor %}
+
+}
+
+{% if properties | length > 0 -%}
+static void
+{{ type_name | lower}}_set_property (GObject*      object,
+  guint         property_id,
+  const GValue* value,
+  GParamSpec*   pspec)
+{
+  {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}* self = {{ type_name }} (object);
+{% if public_private %}
+  {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Private * priv = self->priv;
+{% else %}
+  {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Private * priv = {{ type_name | lower}}_get_instance_private (self);
+{% endif %}
+
+  switch (property_id)
+  {
+{%- for property in properties %}
+  case PROP_{{ property.name | replace('-', '_') | replace(' ', '_') | replace('.', '_') | upper }}:
+    priv->{{ property.name | replace('-', '_') | replace(' ', '_') | replace('.', '_') | lower }} = g_value_get_{{ property.type }}(value);
+    break;
+{% endfor %}
+  default:
+    /* unknown property */
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    break;
+  }
+
+}
+
+static void
+{{ type_name | lower}}_get_property (GObject*    object,
+  guint       property_id,
+  GValue*     value,
+  GParamSpec* pspec)
+{
+  {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}* self = {{ type_name }} (object);
+{% if public_private %}
+  {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Private * priv = self->priv;
+{% else %}
+  {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Private * priv = {{ type_name | lower}}_get_instance_private (self);
+{% endif %}
+
+  switch (property_id)
+  {
+{%- for property in properties %}
+  case PROP_{{ property.name | replace('-', '_') | replace(' ', '_') | replace('.', '_') | upper }}:
+    g_value_set_{{ property.type }} (value, priv->{{ property.name | replace('-', '_') | replace(' ', '_') | replace('.', '_') | lower }});
+    break;
+{% endfor %}
+  default:
+    /* unknown property */
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    break;
+  }
+}
+{%- endif %}
+
+static void
+{{ type_name | lower}}_dispose (GObject* object)
+{
+//  {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}* self = {{ type_name }} (object);
+
+  G_OBJECT_CLASS (parent_class)->dispose (object);
+}
+
+static void
+{{ type_name | lower}}_finalize (GObject* object)
+{
+//  {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}* self = {{ type_name }} (object);
+
+  G_OBJECT_CLASS (parent_class)->finalize (object);
+}
+
+static void
+{{ type_name | lower}}_class_init ({% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Class* klass)
+{
+  GObjectClass* object_class = G_OBJECT_CLASS (klass);
+//  {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Class *{{ type_name | lower }}_class = {{ type_name | upper }}_CLASS (klass);
+
+{% if signals | length > 0 -%}
+  /* Signals */
+{%- endif %}
+{% for signal in signals -%}
+  klass->{{ signal }} = NULL; // FIXME!
+{%- endfor %}
+
+  object_class->dispose = {{ type_name | lower}}_dispose;
+  object_class->finalize = {{ type_name | lower}}_finalize;
+{% if properties | length > 0 -%}
+  object_class->set_property = {{ type_name | lower}}_set_property;
+  object_class->get_property = {{ type_name | lower}}_get_property;
+{%- endif %}
+
+{% if properties | length > 0 -%}
+  /* Properties */
+{% endif -%}
+{%- for property in properties %}
+  g_object_class_install_property (object_class, 
+    PROP_{{ property.name | replace('-', '_') | replace(' ', '_') | replace('.', '_') | upper }},
+    g_para_spec_{{ property.type }} ("{{ property.name }}",
+      "{{ property.nick }}",
+      "{{ property.blurb }}",
+      {%- if property.type in ['int', 'uint', 'long', 'ulong', 'int64', 'uint64', 'float', 'double' ]%}
+      {{ property.min }},
+      {{ property.max }},
+      {{ property.default }},
+      {% elif property.type in ['enum', 'flags', 'variant' ]%}
+      {{ property.subtype }},
+      {{ property.default }},
+      {% elif property.type in ['string', 'unichar' ]%}
+      {{ property.default }},
+      {% elif property.type in ['param', 'boxed', 'object', 'value_array', 'gtype' ]%}
+      {{ property.subtype }},
+      {% endif -%}
+      {{ property.flags }});
+{% endfor %}
+}
+
+{% for method in methods -%}
+{{ method | replace(';', '') }}
+{
+  /* FIXME! */
+}
+                              
+{%- endfor %}

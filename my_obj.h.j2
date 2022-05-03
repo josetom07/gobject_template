@@ -1,0 +1,73 @@
+/*
+ * {{ file_name }}
+ * This file is part of {{ project_name }}
+ *
+ * Copyright (C) {{ year }} - {{ author }}
+ *
+{{ license }}
+ */
+
+#ifndef {{ header_name | replace(".", "_") | replace("-", "_") | upper }}_INCLUDED
+#define {{ header_name | replace(".", "_") | replace("-", "_") | upper }}_INCLUDED
+{% for header in header_includes %}
+#include <{{ header }}>
+{%- endfor %}
+
+G_BEGIN_DECLS
+
+{% set type_name_type = type_name | upper | replace('_', '_TYPE_', 1) -%}
+#define {{ type_name_type }}\
+  ({{ type_name | lower }}_get_type ())
+#define {{ type_name | upper }}(obj)\
+  (G_TYPE_CHECK_INSTANCE_CAST ((obj), {{ type_name_type }}, {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}))
+#define {{ type_name | upper | reverse | replace('_', '_SI_', 1) | reverse }}(obj)\
+  (G_TYPE_CHECK_INSTANCE_TYPE ((obj), {{ type_name_type }}))
+#define {{ type_name | upper }}_CLASS(klass)\
+  (G_TYPE_CHECK_CLASS_CAST ((klass), {{ type_name_type }}, {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Class))
+#define {{ type_name | upper }}_IS_CLASS(klass)\
+  (G_TYPE_CHECK_CLASS_TYPE ((klass), {{ type_name_type }}))
+#define {{ type_name | upper }}_GET_CLASS(obj)\
+  (G_TYPE_INSTANCE_GET_CLASS ((obj), {{ type_name_type }}, {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Class))
+
+typedef struct _{% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %} {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %};
+typedef struct _{% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Class {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Class;
+{% if with_private -%}
+typedef struct _{% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Private {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Private;
+{%- endif %}
+
+struct _{% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}
+{
+  {% for value in parent_type.split('_') %}{{ value | capitalize }}{% endfor %} parent;
+
+  {% if with_private and public_private -%}
+  /*< private > */
+  {% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Private* priv;{% endif %}
+};
+
+struct _{% for value in type_name.split('_') %}{{ value | capitalize }}{% endfor %}Class
+{
+  {% for value in parent_type.split('_') %}{{ value | capitalize }}{% endfor %}Class parent_class;
+
+{%- if signals | length > 0 %}
+
+  /* Signals */
+{%- endif %}
+{%- for signal in signals %}
+  {{ signal }}
+{%- endfor %}
+
+  gpointer padding[8];
+};
+
+/* Public Method definitions. */
+GType {{ type_name | lower}}_get_type (void) ;
+
+{% for method in methods -%}
+{{ method }}
+
+{%- endfor %}
+
+G_END_DECLS
+
+#endif // {{ header_name | replace(".", "_") | replace("-", "_") | upper }}_INCLUDED
+
